@@ -61,6 +61,7 @@ fn main() {
         conf.file("../../ext/tinycrypt/lib/source/ecc_platform_specific.c");
 
         conf.file("../../ext/mbedtls/src/asn1parse.c");
+        conf.file("../../ext/mbedtls/src/platform_util.c");
     } else {
         // Neither signature type, only verify sha256. The default
         // configuration file bundled with mbedTLS is sufficient.

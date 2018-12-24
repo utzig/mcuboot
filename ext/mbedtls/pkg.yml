@@ -18,7 +18,7 @@
 #
 
 pkg.name: ext/mbedtls
-pkg.description: "MCUboot's bundled mbed-tls ASN1 parser"
+pkg.description: "MCUboot's bundled Mbed TLS ASN1 parser"
 pkg.author: "Apache Mynewt <dev@mynewt.apache.org>"
 pkg.homepage: "http://mynewt.apache.org/"
 pkg.keywords:
