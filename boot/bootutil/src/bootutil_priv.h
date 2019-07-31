@@ -125,7 +125,6 @@ struct boot_status {
  *      (`MCUBOOT_ENC_IMAGES`).
  */
 
-extern uint8_t current_image;
 extern const uint32_t boot_img_magic[4];
 
 struct boot_swap_state {
@@ -216,6 +215,7 @@ struct boot_loader_state {
 
     uint8_t swap_type[BOOT_IMAGE_NUMBER];
     uint8_t write_sz;
+    uint8_t curr_img_idx;
 };
 
 int bootutil_verify_sig(uint8_t *hash, uint32_t hlen, uint8_t *sig,
@@ -254,11 +254,12 @@ int boot_is_version_sufficient(struct image_version *req,
  */
 
 /* These are macros so they can be used as lvalues. */
-#define BOOT_IMG(state, slot) ((state)->imgs[current_image][(slot)])
+#define BOOT_IMG(state, slot) ((state)->imgs[(state)->curr_img_idx][(slot)])
 #define BOOT_IMG_AREA(state, slot) (BOOT_IMG(state, slot).area)
 #define BOOT_SCRATCH_AREA(state) ((state)->scratch.area)
 #define BOOT_WRITE_SZ(state) ((state)->write_sz)
-#define BOOT_SWAP_TYPE(state) ((state)->swap_type[current_image])
+#define BOOT_SWAP_TYPE(state) ((state)->swap_type[(state)->curr_img_idx])
+#define BOOT_CURR_IMG(state) ((state)->curr_img_idx)
 
 static inline struct image_header*
 boot_img_hdr(struct boot_loader_state *state, size_t slot)

@@ -47,7 +47,9 @@
 MCUBOOT_LOG_MODULE_DECLARE(mcuboot);
 
 static struct boot_loader_state boot_data;
-uint8_t current_image = 0;
+
+/* FIXME: this is temporary while sysflash is not updated */
+uint8_t *current_image = &boot_data.curr_img_idx;
 
 #if (BOOT_IMAGE_NUMBER > 1)
 #define IMAGES_ITER(x) for ((x) = 0; (x) < BOOT_IMAGE_NUMBER; ++(x))
@@ -203,7 +205,7 @@ boot_status_source(void)
              * currently examined image.
              */
             if (source == BOOT_STATUS_SOURCE_SCRATCH &&
-                state_scratch.image_num != current_image) {
+                state_scratch.image_num != BOOT_CURR_IMG(&boot_data)) {
                 source = BOOT_STATUS_SOURCE_NONE;
             }
 #endif
@@ -1002,7 +1004,7 @@ boot_status_init(const struct flash_area *fap, const struct boot_status *bs)
     if (bs->swap_type != BOOT_SWAP_TYPE_NONE) {
         rc = boot_write_swap_info(fap,
                                   bs->swap_type,
-                                  current_image);
+                                  BOOT_CURR_IMG(&boot_data));
         assert(rc == 0);
     }
 
@@ -1226,7 +1228,7 @@ boot_swap_sectors(int idx, uint32_t sz, struct boot_status *bs)
             if (swap_state.swap_type != BOOT_SWAP_TYPE_NONE) {
                 rc = boot_write_swap_info(fap_primary_slot,
                                           swap_state.swap_type,
-                                          current_image);
+                                          BOOT_CURR_IMG(&boot_data));
                 assert(rc == 0);
             }
 
@@ -1787,17 +1789,17 @@ boot_verify_single_image_dependency(void)
 static void
 boot_verify_all_image_dependency(void)
 {
-    current_image = 0;
     int rc;
 
-    while (current_image < BOOT_IMAGE_NUMBER) {
+    BOOT_CURR_IMG(&boot_data) = 0;
+    while (BOOT_CURR_IMG(&boot_data) < BOOT_IMAGE_NUMBER) {
         rc = boot_verify_single_image_dependency();
         if (rc == 0) {
             /* All dependencies've been satisfied, continue with next image. */
-            current_image++;
+            BOOT_CURR_IMG(&boot_data)++;
         } else if (rc == BOOT_EBADVERSION) {
             /* Dependency check needs to be restarted. */
-            current_image = 0;
+            BOOT_CURR_IMG(&boot_data) = 0;
         } else {
             /* Other error happened, images are inconsistent */
             return;
@@ -1950,7 +1952,7 @@ boot_review_image_swap_types(bool aborted_swap)
      *      upgrades).
      */
 
-    if (current_image == 0) {
+    if (BOOT_CURR_IMG(&boot_data) == 0) {
         /* Nothing to do */
         return;
     }
@@ -1963,7 +1965,7 @@ boot_review_image_swap_types(bool aborted_swap)
         }
     }
 
-    for (uint8_t i = 0; i < current_image; i++) {
+    for (uint8_t i = 0; i < BOOT_CURR_IMG(&boot_data); i++) {
         if (boot_data.swap_type[i] == BOOT_SWAP_TYPE_REVERT) {
             boot_data.swap_type[i] = BOOT_SWAP_TYPE_NONE;
         }
@@ -2002,7 +2004,8 @@ boot_prepare_image_for_update(struct boot_status *bs)
     rc = boot_read_image_headers(false);
     if (rc != 0) {
         /* Continue with next image if there is one. */
-        BOOT_LOG_WRN("Failed reading image headers; Image=%u", current_image);
+        BOOT_LOG_WRN("Failed reading image headers; Image=%u",
+                BOOT_CURR_IMG(&boot_data));
         BOOT_SWAP_TYPE(&boot_data) = BOOT_SWAP_TYPE_NONE;
         return;
     }
@@ -2015,7 +2018,7 @@ boot_prepare_image_for_update(struct boot_status *bs)
         rc = boot_read_status(bs);
         if (rc != 0) {
             BOOT_LOG_WRN("Failed reading boot status; Image=%u",
-                         current_image);
+                    BOOT_CURR_IMG(&boot_data));
             /* Continue with next image if there is one. */
             BOOT_SWAP_TYPE(&boot_data) = BOOT_SWAP_TYPE_NONE;
             return;
@@ -2131,7 +2134,7 @@ boot_go(struct boot_rsp *rsp)
      * to be determined for each image and all aborted swaps have to be
      * completed.
      */
-    IMAGES_ITER(current_image) {
+    IMAGES_ITER(BOOT_CURR_IMG(&boot_data)) {
 
 #if defined(MCUBOOT_ENC_IMAGES) && (BOOT_IMAGE_NUMBER > 1)
         /* The keys used for encryption may no longer be valid (could belong to
@@ -2142,9 +2145,9 @@ boot_go(struct boot_rsp *rsp)
 #endif
 
         BOOT_IMG(&boot_data, BOOT_PRIMARY_SLOT).sectors =
-                                        primary_slot_sectors[current_image];
+            primary_slot_sectors[BOOT_CURR_IMG(&boot_data)];
         BOOT_IMG(&boot_data, BOOT_SECONDARY_SLOT).sectors =
-                                        secondary_slot_sectors[current_image];
+            secondary_slot_sectors[BOOT_CURR_IMG(&boot_data)];
         boot_data.scratch.sectors = scratch_sectors;
 
         /* Open primary and secondary image areas for the duration
@@ -2174,7 +2177,7 @@ boot_go(struct boot_rsp *rsp)
      * and the swap types are determined for each image. By the end of the loop
      * all required update operations will have been finished.
      */
-    IMAGES_ITER(current_image) {
+    IMAGES_ITER(BOOT_CURR_IMG(&boot_data)) {
 
 #if (BOOT_IMAGE_NUMBER > 1)
 #ifdef MCUBOOT_ENC_IMAGES
@@ -2236,7 +2239,7 @@ boot_go(struct boot_rsp *rsp)
      * have finished. By the end of the loop each image in the primary slot will
      * have been re-validated.
      */
-    IMAGES_ITER(current_image) {
+    IMAGES_ITER(BOOT_CURR_IMG(&boot_data)) {
         if (BOOT_SWAP_TYPE(&boot_data) != BOOT_SWAP_TYPE_NONE) {
             /* Attempt to read an image header from each slot. Ensure that image
              * headers in slots are aligned with headers in boot_data.
@@ -2267,7 +2270,7 @@ boot_go(struct boot_rsp *rsp)
                 IMAGE_MAGIC) {
             BOOT_LOG_ERR("bad image magic 0x%lx; Image=%u", (unsigned long)
                          &boot_img_hdr(&boot_data,BOOT_PRIMARY_SLOT)->ih_magic,
-                         current_image);
+                         BOOT_CURR_IMG(&boot_data));
             rc = BOOT_EBADIMAGE;
             goto out;
         }
@@ -2275,7 +2278,7 @@ boot_go(struct boot_rsp *rsp)
     }
 
     /* Always boot from the primary slot of Image 0. */
-    current_image = 0;
+    BOOT_CURR_IMG(&boot_data) = 0;
     rsp->br_flash_dev_id =
             BOOT_IMG_AREA(&boot_data, BOOT_PRIMARY_SLOT)->fa_device_id;
     rsp->br_image_off =
@@ -2284,7 +2287,7 @@ boot_go(struct boot_rsp *rsp)
             boot_img_hdr(&boot_data, BOOT_PRIMARY_SLOT);
 
  out:
-    IMAGES_ITER(current_image) {
+    IMAGES_ITER(BOOT_CURR_IMG(&boot_data)) {
         flash_area_close(BOOT_SCRATCH_AREA(&boot_data));
         for (slot = 0; slot < BOOT_NUM_SLOTS; slot++) {
             flash_area_close(BOOT_IMG_AREA(&boot_data,
