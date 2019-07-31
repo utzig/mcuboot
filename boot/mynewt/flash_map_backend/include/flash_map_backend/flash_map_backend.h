@@ -9,6 +9,9 @@
 
 #include <flash_map/flash_map.h>
 
+#define FLASH_AREA_IMAGE_PRIMARY(x)    FLASH_AREA_IMAGE_0
+#define FLASH_AREA_IMAGE_SECONDARY(x)  FLASH_AREA_IMAGE_1
+
 int flash_area_id_from_multi_image_slot(int image_index, int slot);
 int flash_area_id_to_multi_image_slot(int image_index, int area_id);
 
