@@ -27,8 +27,8 @@ extern "C" {
 #endif
 
 #if defined(MCUBOOT_MYNEWT)
-#define FLASH_AREA_IMAGE_PRIMARY    FLASH_AREA_IMAGE_0
-#define FLASH_AREA_IMAGE_SECONDARY  FLASH_AREA_IMAGE_1
+#define FLASH_AREA_IMAGE_PRIMARY(x)    FLASH_AREA_IMAGE_0
+#define FLASH_AREA_IMAGE_SECONDARY(x)  FLASH_AREA_IMAGE_1
 #endif
 
 /** Attempt to boot the contents of the primary slot. */
@@ -91,7 +91,7 @@ struct image_trailer {
 /* you must have pre-allocated all the entries within this structure */
 int boot_go(struct boot_rsp *rsp);
 
-int boot_swap_type(void);
+int boot_swap_type(int image_index);
 
 int boot_set_pending(int permanent);
 int boot_set_confirmed(void);

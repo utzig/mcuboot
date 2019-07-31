@@ -233,6 +233,7 @@ boot_enc_load(const struct image_header *hdr, const struct flash_area *fap,
     uint8_t enckey_type;
     int rc;
 
+    /* FIXME */
     rc = flash_area_id_to_image_slot(fap->fa_id);
     if (rc < 0) {
         return rc;
@@ -311,10 +312,11 @@ boot_enc_valid(const struct flash_area *fap)
 {
     int rc;
 
+    /* FIXME */
     rc = flash_area_id_to_image_slot(fap->fa_id);
     if (rc < 0) {
         /* can't get proper slot number - skip encryption, */
-        /* postpone the erro for a upper layer */
+        /* postpone the error for a upper layer */
         return false;
     }
 
@@ -349,6 +351,7 @@ boot_encrypt(const struct flash_area *fap, uint32_t off, uint32_t sz,
     nonce[14] = (uint8_t)(off >> 8);
     nonce[15] = (uint8_t)off;
 
+    /* FIXME */
     rc = flash_area_id_to_image_slot(fap->fa_id);
     if (rc < 0) {
         assert(0);
