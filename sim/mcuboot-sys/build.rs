@@ -57,6 +57,8 @@ fn main() {
         conf.define("MCUBOOT_USE_MBED_TLS", None);
 
         conf.include("mbedtls/include");
+        conf.file("mbedtls/library/md.c");
+        conf.file("mbedtls/library/md_wrap.c");
         conf.file("mbedtls/library/sha256.c");
         conf.file("csupport/keys.c");
 
