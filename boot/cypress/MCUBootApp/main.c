@@ -56,8 +56,8 @@
 
 int main(void)
 {
-/* Initialize the device and board peripherals */
-    int result = cybsp_init() ;
+    /* Initialize the device and board peripherals */
+    int result = cybsp_init();
 
     if (result != CY_RSLT_SUCCESS)
     {

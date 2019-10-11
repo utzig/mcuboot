@@ -29,7 +29,7 @@ int     flash_area_id_from_image_slot(int slot);
 /*< Returns the slot, for the `fa_id` supplied */
 int     flash_area_id_to_image_slot(int area_id);
 
-//int flash_area_id_from_multi_image_slot(int image_index, int slot);
-//int flash_area_id_to_multi_image_slot(int image_index, int area_id);
+int flash_area_id_from_multi_image_slot(int image_index, int slot);
+int flash_area_id_to_multi_image_slot(int image_index, int area_id);
 
 #endif /* __FLASH_MAP_BACKEND_H__ */
