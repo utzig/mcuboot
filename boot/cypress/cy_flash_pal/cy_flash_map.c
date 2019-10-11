@@ -63,16 +63,15 @@
 * so agrees to indemnify Cypress against all liability.
 *
 ******************************************************************************/
-#include "flash_map_backend.h"
-#include "mcuboot_config/mcuboot_config.h"
-
-#include "cy_pdl.h"
-#include "qspi.h"
-
 #include <assert.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdint.h>
+
+#include "flash_map_backend/flash_map_backend.h"
+#include "mcuboot_config/mcuboot_config.h"
+
+#include "cy_pdl.h"
 
 #ifdef CY_USE_EXTERNAL_FLASH
 
