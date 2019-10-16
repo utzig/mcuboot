@@ -60,6 +60,6 @@ int psoc6_flash_write(off_t addr, const void *data, size_t len);
 int psoc6_flash_erase(off_t addr, size_t size);
 
 int psoc6_flash_write_hal(uint8_t data[],
-							 uint32_t address,
-							 uint32_t len);
+                            uint32_t address,
+                            uint32_t len);
 #endif /* CY_FLASH_PSOC6_H_ */

@@ -69,11 +69,12 @@
 #include <stdint.h>
 
 #include "flash_map_backend/flash_map_backend.h"
+#include "flash_map.h"
 #include "mcuboot_config/mcuboot_config.h"
 
 #include "cy_pdl.h"
 
-#ifdef CY_USE_EXTERNAL_FLASH
+#ifndef CY_USE_EXTERNAL_FLASH
 
 static struct flash_area bootloader =
 {
@@ -223,20 +224,22 @@ int     flash_area_erase(const struct flash_area *fa, uint32_t off, uint32_t len
 }
 
 /*< Returns this `flash_area`s alignment */
-uint8_t flash_area_align(const struct flash_area *fa)
+size_t flash_area_align(const struct flash_area *fa)
 {
-    uint8_t rc = -1;
+    uint8_t ret = -1;
     if (fa->fa_device_id == FLASH_DEVICE_INTERNAL_FLASH)
     {
         assert(off < fa->fa_off);
         assert(off + len < fa->fa_off);
 
-        rc = CY_FLASH_SIZEOF_ROW;
+        // TODO: it is 512 in PSoC6 which is more then uint8
+        // TODO: check how to handle that
+        ret = CY_FLASH_SIZEOF_ROW;
     }
 #ifdef CY_USE_EXTERNAL_FLASH    
     else if ((fa->fa_device_id & FLASH_DEVICE_EXTERNAL_FLAG) == FLASH_DEVICE_EXTERNAL_FLAG)
     {
-        // TODO: implement/split into psoc6_smif_erase()
+        // TODO: implement for SMIF WR/ERASE size
     }
 #endif
     else
@@ -244,7 +247,7 @@ uint8_t flash_area_align(const struct flash_area *fa)
         /* incorrect/non-existing flash device id */
         ret = -1;
     }
-    return rc;
+    return ret;
 }
 
 #ifdef MCUBOOT_USE_FLASH_AREA_GET_SECTORS
@@ -259,7 +262,8 @@ int     flash_area_to_sectors(int idx, int *cnt, struct flash_area *ret)
         assert(off < fa->fa_off);
         assert(off + len < fa->fa_off);
 
-        rc = CY_FLASH_SIZEOF_ROW;
+        // TODO:
+        rc = 0;
     }
 #ifdef CY_USE_EXTERNAL_FLASH
     else if ((fa->fa_device_id & FLASH_DEVICE_EXTERNAL_FLAG) == FLASH_DEVICE_EXTERNAL_FLAG)
