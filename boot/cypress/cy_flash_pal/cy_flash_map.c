@@ -69,13 +69,15 @@
 #include <stdint.h>
 
 #include "flash_map_backend/flash_map_backend.h"
-#include "flash_map.h"
+#include <sysflash/sysflash.h>
+#include "cy_flash_psoc6.h"
 #include "mcuboot_config/mcuboot_config.h"
 
 #include "cy_pdl.h"
 
-#ifndef CY_USE_EXTERNAL_FLASH
-
+#ifdef CY_FLASH_MAP_EXT_DESC
+/* Nothing to be there when external FlashMap Descriptors are used */
+#else
 static struct flash_area bootloader =
 {
     .fa_id = FLASH_AREA_BOOTLOADER,
@@ -84,63 +86,126 @@ static struct flash_area bootloader =
     .fa_size = CY_BOOT_BOOTLOADER_SIZE
 };
 
-static struct flash_area primary =
+static struct flash_area primary_1 =
 {
     .fa_id = FLASH_AREA_IMAGE_PRIMARY(0),
     .fa_device_id = FLASH_DEVICE_INTERNAL_FLASH,
     .fa_off = CY_FLASH_BASE + CY_BOOT_BOOTLOADER_SIZE,
-    .fa_size = MCUBOOT_MAX_IMG_SECTORS * CY_FLASH_SIZEOF_ROW
+    .fa_size = CY_BOOT_PRIMARY_1_SIZE
 };
 
-static struct flash_area secondary =
+static struct flash_area secondary_1 =
 {
     .fa_id = FLASH_AREA_IMAGE_SECONDARY(0),
-    .fa_device_id = FLASH_DEVICE_EXTERNAL_FLASH(CY_BOOT_EXTERNAL_DEVICE_INDEX),
-    .fa_off = 0,
-    .fa_size = MCUBOOT_MAX_IMG_SECTORS * CY_FLASH_SIZEOF_ROW
+    .fa_device_id = FLASH_DEVICE_INTERNAL_FLASH,
+    .fa_off = CY_FLASH_BASE +\
+                CY_BOOT_BOOTLOADER_SIZE +\
+                CY_BOOT_PRIMARY_1_SIZE,
+    .fa_size = CY_BOOT_SECONDARY_1_SIZE
+};
+#if (MCUBOOT_IMAGE_NUMBER == 2) /* if dual-image */
+static struct flash_area primary_2 =
+{
+    .fa_id = FLASH_AREA_IMAGE_PRIMARY(1),
+    .fa_device_id = FLASH_DEVICE_INTERNAL_FLASH,
+    .fa_off = CY_BOOT_BOOTLOADER_SIZE +\
+                CY_BOOT_PRIMARY_1_SIZE +\
+                CY_BOOT_SECONDARY_1_SIZE,
+    .fa_size = CY_BOOT_PRIMARY_2_SIZE
 };
 
+static struct flash_area secondary_2 =
+{
+    .fa_id = FLASH_AREA_IMAGE_SECONDARY(1),
+    /* TODO: it is for external flash memory
+    .fa_device_id = FLASH_DEVICE_EXTERNAL_FLASH(CY_BOOT_EXTERNAL_DEVICE_INDEX), */
+    .fa_device_id = FLASH_DEVICE_INTERNAL_FLASH,
+    .fa_off = CY_FLASH_BASE +\
+                CY_BOOT_BOOTLOADER_SIZE +\
+                CY_BOOT_PRIMARY_1_SIZE +\
+                CY_BOOT_SECONDARY_1_SIZE +\
+                CY_BOOT_PRIMARY_2_SIZE,
+    .fa_size = CY_BOOT_SECONDARY_2_SIZE
+};
+#endif
 static struct flash_area scratch =
 {
     .fa_id = FLASH_AREA_IMAGE_SCRATCH,
     .fa_device_id = FLASH_DEVICE_INTERNAL_FLASH,
-    .fa_off = CY_FLASH_BASE + CY_BOOT_BOOTLOADER_SIZE + MCUBOOT_MAX_IMG_SECTORS * CY_FLASH_SIZEOF_ROW,
+#if (MCUBOOT_IMAGE_NUMBER == 1) /* if single-image */
+    .fa_off = CY_BOOT_BOOTLOADER_SIZE +\
+                CY_BOOT_PRIMARY_1_SIZE +\
+                CY_BOOT_SECONDARY_1_SIZE,
+#elif (MCUBOOT_IMAGE_NUMBER == 2) /* if dual-image */
+    .fa_off = CY_FLASH_BASE +\
+                CY_BOOT_BOOTLOADER_SIZE +\
+                CY_BOOT_PRIMARY_1_SIZE +\
+                CY_BOOT_SECONDARY_1_SIZE +\
+                CY_BOOT_PRIMARY_2_SIZE +\
+                CY_BOOT_SECONDARY_2_SIZE,
+#endif
     .fa_size = CY_BOOT_SCRATCH_SIZE
 };
+#endif
 
+#ifdef CY_FLASH_MAP_EXT_DESC
+/* Use external Flash Map Descriptors */
+extern flash_area *boot_area_descs[];
 #else
-    // TODO: implement flash areas for external flash (SMIF)
+struct flash_area *boot_area_descs[] =
+{
+    &bootloader,
+    &primary_1,
+    &secondary_1,
+#if (MCUBOOT_IMAGE_NUMBER == 2) /* if dual-image */
+    &primary_2,
+    &secondary_2,
+#endif
+    &scratch,
+    NULL
+};
 #endif
 
 /*< Opens the area for use. id is one of the `fa_id`s */
 int     flash_area_open(uint8_t id, const struct flash_area **fa)
 {
-    int ret = 0;
+    int ret = -1;
+    uint32_t i = 0;
 
-    switch(id)
+    while(boot_area_descs[i] != NULL)
     {
-    case FLASH_AREA_BOOTLOADER:
-        *fap = &bootloader;
-        break;
-    case FLASH_AREA_IMAGE_PRIMARY(0):
-        *fap = &primary;
-        break;
-    case FLASH_AREA_IMAGE_SECONDARY(0):
-        *fap = &secondary;
-        break;
-    case FLASH_AREA_IMAGE_SCRATCH:
-        *fap = &scratch;
-        break;
-    default:
-        ret = -1;
+        if(id == boot_area_descs[i]->fa_id)
+        {
+            *fa = boot_area_descs[i];
+            ret = 0;
+            break;
+        }
+        i++;
     }
 
+//    switch(id)
+//    {
+//    case FLASH_AREA_BOOTLOADER:
+//        *fa = &bootloader;
+//        break;
+//    case FLASH_AREA_IMAGE_PRIMARY(0):
+//        *fa = &primary;
+//        break;
+//    case FLASH_AREA_IMAGE_SECONDARY(0):
+//        *fa = &secondary;
+//        break;
+//    case FLASH_AREA_IMAGE_SCRATCH:
+//        *fa = &scratch;
+//        break;
+//    default:
+//        ret = -1;
+//    }
     return ret;
 }
 
-void    flash_area_close(const struct flash_area *)
+void    flash_area_close(const struct flash_area *fa)
 {
-    (void);
+    (void)fa;/* Nothing to do there */
 }
 
 /*< Reads `len` bytes of flash memory at `off` to the buffer at `dst` */
@@ -148,12 +213,15 @@ int     flash_area_read(const struct flash_area *fa, uint32_t off, void *dst,
                      uint32_t len)
 {
     int rc = 0;
+    size_t addr;
     
     if (fa->fa_device_id == FLASH_DEVICE_INTERNAL_FLASH)
     {
         assert(off < fa->fa_off);
         assert(off + len < fa->fa_off);
         
+        addr = fa->fa_off + off;
+
         rc = psoc6_flash_read(addr, dst, len);
     }
 #ifdef CY_USE_EXTERNAL_FLASH    
@@ -165,7 +233,7 @@ int     flash_area_read(const struct flash_area *fa, uint32_t off, void *dst,
     else
     {
         /* incorrect/non-existing flash device id */
-        ret = -1;
+        rc = -1;
     }
 
     return rc;
@@ -176,12 +244,15 @@ int     flash_area_write(const struct flash_area *fa, uint32_t off,
                      const void *src, uint32_t len)
 {
     int rc = 0;
+    size_t addr;
+
     if (fa->fa_device_id == FLASH_DEVICE_INTERNAL_FLASH)
     {
         assert(off < fa->fa_off);
         assert(off + len < fa->fa_off);
 
-        rc = psoc6_flash_write(addr, dst, len);
+        addr = fa->fa_off + off;
+        rc = psoc6_flash_write(addr, src, len);
     }
 #ifdef CY_USE_EXTERNAL_FLASH    
     else if ((fa->fa_device_id & FLASH_DEVICE_EXTERNAL_FLAG) == FLASH_DEVICE_EXTERNAL_FLAG)
@@ -202,12 +273,15 @@ int     flash_area_write(const struct flash_area *fa, uint32_t off,
 int     flash_area_erase(const struct flash_area *fa, uint32_t off, uint32_t len)
 {
     int rc = 0;
+    size_t addr;
+
     if (fa->fa_device_id == FLASH_DEVICE_INTERNAL_FLASH)
     {
         assert(off < fa->fa_off);
         assert(off + len < fa->fa_off);
 
-        rc = psoc6_flash_erase(addr, dst, len);
+        addr = fa->fa_off + off;
+        rc = psoc6_flash_erase(addr, len);
     }
 #ifdef CY_USE_EXTERNAL_FLASH    
     else if ((fa->fa_device_id & FLASH_DEVICE_EXTERNAL_FLAG) == FLASH_DEVICE_EXTERNAL_FLAG)
@@ -229,12 +303,9 @@ size_t flash_area_align(const struct flash_area *fa)
     uint8_t ret = -1;
     if (fa->fa_device_id == FLASH_DEVICE_INTERNAL_FLASH)
     {
-        assert(off < fa->fa_off);
-        assert(off + len < fa->fa_off);
-
         // TODO: it is 512 in PSoC6 which is more then uint8
         // TODO: check how to handle that
-        ret = CY_FLASH_SIZEOF_ROW;
+        ret = CY_FLASH_ALIGN;
     }
 #ifdef CY_USE_EXTERNAL_FLASH    
     else if ((fa->fa_device_id & FLASH_DEVICE_EXTERNAL_FLAG) == FLASH_DEVICE_EXTERNAL_FLAG)
@@ -252,16 +323,12 @@ size_t flash_area_align(const struct flash_area *fa)
 
 #ifdef MCUBOOT_USE_FLASH_AREA_GET_SECTORS
 /*< Initializes an array of flash_area elements for the slot's sectors */
-int     flash_area_to_sectors(int idx, int *cnt, struct flash_area *ret)
+int     flash_area_to_sectors(int idx, int *cnt, struct flash_area *fa)
 {
     int rc = 0;
 
-    uint8_t rc = -1;
     if (fa->fa_device_id == FLASH_DEVICE_INTERNAL_FLASH)
     {
-        assert(off < fa->fa_off);
-        assert(off + len < fa->fa_off);
-
         // TODO:
         rc = 0;
     }
@@ -294,7 +361,7 @@ int flash_area_id_from_multi_image_slot(int image_index, int slot)
     case 2: return FLASH_AREA_IMAGE_SCRATCH;
     }
 
-    return -EINVAL; /* flash_area_open will fail on that */
+    return -1; /* flash_area_open will fail on that */
 }
 
 int flash_area_id_from_image_slot(int slot)

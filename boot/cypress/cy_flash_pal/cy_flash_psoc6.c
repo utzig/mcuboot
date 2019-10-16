@@ -9,7 +9,7 @@
 ********************************************************************************
 * \copyright
 *
-* (c) 2018, Cypress Semiconductor Corporation
+* (c) 2019, Cypress Semiconductor Corporation
 * or a subsidiary of Cypress Semiconductor Corporation. All rights
 * reserved.
 *
@@ -57,12 +57,12 @@
 
 #include "cy_device_headers.h"
 
-#include "device.h"
-
-#include "util.h"
-#include "flash.h"
-#include "flash_map.h"
-#include "flash_psoc6.h"
+// TODO:
+//#include "device.h"
+//#include "util.h"
+//#include "flash.h"
+//#include "flash_map.h"
+#include "cy_flash_psoc6.h"
 
 #include "cy_flash.h"
 #include "cy_syspm.h"
@@ -72,11 +72,8 @@
 #define PSOC6_WR_ERROR_FLASH_WRITE 2
 
 #define PSOC6_FLASH_ERASE_BLOCK_SIZE	CY_FLASH_SIZEOF_ROW /* PSoC6 Flash erases by Row */
-// TODO: fix it or remove
-#define PSOC6_CONFIG_FLASH_SIZE         16384*16
 
-int psoc6_flash_read(off_t addr,
-			   void *data, size_t len)
+int psoc6_flash_read(off_t addr, void *data, size_t len)
 {
 	/* flash read by simple memory copying */
 	memcpy((void *)data, (const void*)addr, (size_t)len);
@@ -267,7 +264,7 @@ int psoc6_flash_write_hal(uint8_t data[],
         rc = CY_FLASH_DRV_INVALID_INPUT_PARAMETERS;
     }
 
-    /* Return BLE error code */
+    /* Return error code */
     switch(rc)
     {
         case CY_FLASH_DRV_SUCCESS:

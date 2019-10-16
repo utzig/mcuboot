@@ -1,5 +1,5 @@
 /***************************************************************************//**
-* \file flash_psoc6.h
+* \file cy_flash_psoc6.h
 * \version 1.0
 *
 * \brief
@@ -8,7 +8,7 @@
 ********************************************************************************
 * \copyright
 *
-* © 2018, Cypress Semiconductor Corporation
+* © 2019, Cypress Semiconductor Corporation
 * or a subsidiary of Cypress Semiconductor Corporation. All rights
 * reserved.
 *

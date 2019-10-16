@@ -54,6 +54,8 @@
 #include "cyhal.h"
 #include "cybsp.h"
 
+#include "flash_map_backend/flash_map_backend.h"
+
 int main(void)
 {
     /* Initialize the device and board peripherals */
@@ -69,6 +71,9 @@ int main(void)
 
     /* enable interrupts */
     __enable_irq();
+
+    struct flash_area *fa;
+    result = flash_area_open(0, fa);
 
     for (;;)
     {
