@@ -18,6 +18,7 @@ mac_build:
   tags:
     - MBED_TEST_MAC1014
   script:
+    - export https_proxy=http://proxy.ua.cypress.com:8080
     - pwd
     - git submodule update --init
     - cd boot/cypress
@@ -29,6 +30,7 @@ lin_build:
   tags:
     - MBED_TEST_MAC1014
   script:
+    - export https_proxy=http://proxy.ua.cypress.com:8080
     - pwd
     - git submodule update --init
     - cd boot/cypress
