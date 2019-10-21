@@ -28,7 +28,7 @@ mac_build:
 lin_build:
   stage: build
   tags:
-    - MBED_TEST_MAC1014
+    - FW_SECURITY_TEST_UBUNTU1804
   script:
     - export https_proxy=http://proxy.ua.cypress.com:8080
     - pwd
