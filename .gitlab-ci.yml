@@ -23,11 +23,14 @@ mac_build:
     - cd boot/cypress
     - make app APP_NAME=MCUBootApp TARGET=CY8CPROTO-062-4343W-M0 BUILDCFG=Debug TOOLCHAIN=/Applications/ModusToolbox/tools_2.0/gcc-7.2.1
 
-#/Applications/ModusToolbox/tools_2.0/gcc-7.2.1
+
+lin_build:
+  stage: build
+  tags:
+    - MBED_TEST_MAC1014
+  script:
+    - pwd
+    - git submodule update --init
+    - cd boot/cypress
+    - make app APP_NAME=MCUBootApp TARGET=CY8CPROTO-062-4343W-M0 BUILDCFG=Debug TOOLCHAIN=/Applications/ModusToolbox/tools_2.0/gcc-7.2.1
     
-    
-
-
-
-
-
