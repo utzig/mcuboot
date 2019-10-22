@@ -56,7 +56,7 @@ deploy_asset:
   tags:
     - devops-assets
   dependencies:
-    - build
+    - win_build
   only:
     - develop
   script:
