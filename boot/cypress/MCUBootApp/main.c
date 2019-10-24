@@ -15,21 +15,21 @@
 *   2. Open design.modus file and replicate P0[3] configuration on P13[7]. Give
 *      this pin the alias "LED_RED". Disable P0[3].
 *   3. Build and Program
-* 
+*
 * Migration to CY8CPROTO-062-4343W kit (command line make):
-*   1. Launch the Device Configurator tool from 
+*   1. Launch the Device Configurator tool from
 *      ModusToolbox_1.0\tools\device-configurator-1.0\
-*   2. In Device Configurator, open design.modus file  
-*      (ModusToolbox_1.0\libraries\psoc6sw-1.0\examples\BlinkyLED\design.modus) 
-*      and replicate P0[3] configuration on P13[7]. 
+*   2. In Device Configurator, open design.modus file
+*      (ModusToolbox_1.0\libraries\psoc6sw-1.0\examples\BlinkyLED\design.modus)
+*      and replicate P0[3] configuration on P13[7].
 *      Give this pin the alias "LED_RED". Disable P0[3].
 *   3. Perform "make clean"
 *   4. Build and Program the device with "make DEVICE=CY8C624ABZI-D44 program"
-*      Note that depending on the method used to program the device, you may 
+*      Note that depending on the method used to program the device, you may
 *      need to manually reset it by pressing the SW1 RESET button on the kit.
 *   4. Observe the red blinking LED.
-*   5. To switch back to CY8CKIT-062-BLE or CY8CKIT-062-WIFI-BT, 
-*      perform steps 1 through 3 to reconfigure the "LED_RED" to P0[3]. 
+*   5. To switch back to CY8CKIT-062-BLE or CY8CKIT-062-WIFI-BT,
+*      perform steps 1 through 3 to reconfigure the "LED_RED" to P0[3].
 *      Then use "make program".
 *
 ********************************************************************************
@@ -50,32 +50,75 @@
 * limitations under the License.
 *******************************************************************************/
 
+/* Cypress pdl/bsp headers */
 #include "cy_pdl.h"
 #include "cyhal.h"
 #include "cybsp.h"
+#include "cy_retarget_io.h"
+#include "cy_result.h"
+
+#include "sysflash/sysflash.h"
+#include "flash_map_backend/flash_map_backend.h"
+
+#include "bootutil/image.h"
+#include "bootutil/bootutil.h"
+#include "bootutil/sign_key.h"
+
+#include "bootutil/bootutil_log.h"
+
+static void do_boot(struct boot_rsp *rsp)
+{
+    uint32_t app_addr = 0;
+
+    app_addr = (rsp->br_image_off + rsp->br_hdr->ih_hdr_size);
+
+    BOOT_LOG_INF("Starting User Application on CM4 (wait)...");
+    Cy_SysLib_Delay(100);
+
+    cy_retarget_io_deinit();
+
+    Cy_SysEnableCM4(app_addr);
+
+    while (1)
+    {
+        __WFI() ;
+    }
+}
 
 int main(void)
 {
-/* Initialize the device and board peripherals */
-    int result = cybsp_init() ;
+    cy_rslt_t rc = !CY_RSLT_SUCCESS;
+    struct boot_rsp rsp ;
 
-    if (result != CY_RSLT_SUCCESS)
+    /* Initialize the device and board peripherals */
+    rc = cybsp_init();
+
+    if (rc != CY_RSLT_SUCCESS)
     {
         CY_ASSERT(0);
     }
 
-    /* Initialize the User LED */
-    cyhal_gpio_init((cyhal_gpio_t) CYBSP_USER_LED1, CYHAL_GPIO_DIR_OUTPUT, CYHAL_GPIO_DRIVE_STRONG, CYBSP_LED_STATE_OFF);
+    /* Initialize retarget-io to use the debug UART port */
+    cy_retarget_io_init(CYBSP_DEBUG_UART_TX, CYBSP_DEBUG_UART_RX, CY_RETARGET_IO_BAUDRATE);
 
     /* enable interrupts */
+    if (rc != CY_RSLT_SUCCESS)
+    {
+        CY_ASSERT(0);
+    }
+    else
+    {
+        BOOT_LOG_INF("MCUBoot Bootloader Started");
+    }
     __enable_irq();
 
-    for (;;)
+    if (boot_go(&rsp) == 0)
     {
-		/* Toggle the user LED periodically */
-        Cy_SysLib_Delay(500) ;
-
-        /* Invert the USER LED state */
-        cyhal_gpio_toggle((cyhal_gpio_t) CYBSP_USER_LED1);
+        BOOT_LOG_INF("User Application validated successfully");
+        do_boot(&rsp);
     }
+    else
+        BOOT_LOG_INF("MCUBoot Bootloader found none of bootable images") ;
+
+    return 0;
 }

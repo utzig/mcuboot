@@ -30,9 +30,9 @@
 #	- more to come
 
 # default TARGET
-TARGET ?= CY8CPROTO-062-4343W-M0
+TARGET ?= CY8CPROTO-062-4343W
 #
-TARGETS := CY8CPROTO-062-4343W-M0 CY8CKIT-062-WIFI-BT-M0
+TARGETS := CY8CPROTO-062-4343W CY8CKIT-062-WIFI-BT
 
 CUR_LIBS_PATH := $(CURDIR)/libs
 BSP_PATH  := $(CUR_LIBS_PATH)/bsp/TARGET_$(TARGET)
@@ -45,7 +45,10 @@ endif
 
 # Collect C source files for TARGET BSP
 SOURCES_BSP := $(wildcard $(BSP_PATH)/COMPONENT_BSP_DESIGN_MODUS/GeneratedSource/*.c)
-SOURCES_BSP += $(BSP_PATH)/startup/system_psoc6_cm0plus.c
+# exclude CapSense for now
+SOURCES_BSP := $(filter-out $(BSP_PATH)/COMPONENT_BSP_DESIGN_MODUS/GeneratedSource/cycfg_capsense.c, \
+				 $(SOURCES_BSP))
+SOURCES_BSP += $(BSP_PATH)/startup/system_psoc6_cm4.c
 SOURCES_BSP += $(BSP_PATH)/cybsp.c
 SOURCES_BSP += $(wildcard $(CUR_LIBS_PATH)/bsp/psoc6hal/src/*.c)
 SOURCES_BSP += $(wildcard $(CUR_LIBS_PATH)/bsp/psoc6hal/src/pin_packages/*.c)
@@ -59,7 +62,7 @@ INCLUDE_DIRS_BSP += $(CUR_LIBS_PATH)/bsp/psoc6hal/include
 
 # Collect Assembler files for TARGET BSP
 # TODO: need to include _01_, _02_ or _03_ depending on device family.
-STARTUP_FILE := $(BSP_PATH)/startup/TOOLCHAIN_$(COMPILER)/startup_psoc6_02_cm0plus
+STARTUP_FILE := $(BSP_PATH)/startup/TOOLCHAIN_$(COMPILER)/startup_psoc6_02_cm4
 
 ifeq ($(COMPILER), GCC_ARM)
 	ASM_FILES_BSP := $(STARTUP_FILE).S
@@ -73,12 +76,6 @@ DEFINES += $(DEVICE)
 # Get defines from BSP makefile and convert it to regular -DMY_NAME style 
 ifneq ($(DEFINES),)
 	DEFINES_BSP :=$(addprefix -D, $(subst -,_,$(DEFINES)))
-endif
-
-ifeq ($(COMPILER), GCC_ARM)
-LINKER_SCRIPT := $(BSP_PATH)/linker/TOOLCHAIN_GCC_ARM/*_cm0plus.ld
-else
-$(error Only GCC ARM is supported at this moment)
 endif
 
 ifeq ($(MAKEINFO) , 1)

@@ -48,14 +48,13 @@ endif
 # NOTE: Absolute pathes for now for the sake of development
 ifeq ($(HOST_OS), win)
 	ifeq ($(COMPILER), GCC_ARM)
-		TOOLCHAIN_PATH ?= c:/Users/$(USERNAME)/ModusToolbox_1.0/tools/gcc-7.2.1-1.0
-		GCC_PATH := $(TOOLCHAIN_PATH)
+		GCC_PATH ?= c:/Users/$(USERNAME)/ModusToolbox_1.0/tools/gcc-7.2.1-1.0
 		# executables
 		CC       := "$(GCC_PATH)/bin/arm-none-eabi-gcc"
-		LD       := $(CC)
+		LD       :=  $(CC)
 
 	else ifeq ($(COMPILER), IAR)
-		IAR_PATH := C:/Program Files (x86)/IAR Systems/Embedded Workbench 8.0/arm
+		IAR_PATH ?= C:/Program Files (x86)/IAR Systems/Embedded Workbench 8.0/arm
 		# executables
 		CC       := "$(IAR_PATH)/bin/iccarm.exe"
 		AS       := "$(IAR_PATH)/bin/iasmarm.exe"
@@ -63,15 +62,13 @@ ifeq ($(HOST_OS), win)
 	endif
 
 else ifeq ($(HOST_OS), osx)
-	TOOLCHAIN_PATH ?= /Users/$(USER)/toolchains/gcc-arm-none-eabi-6
-	GCC_PATH := $(TOOLCHAIN_PATH)
+	GCC_PATH ?= /opt/gcc-arm-none-eabi
 
 	CC := "$(GCC_PATH)/bin/arm-none-eabi-gcc"
 	LD := $(CC)
 
 else ifeq ($(HOST_OS), linux)
-	TOOLCHAIN_PATH ?= /usr/bin/gcc-arm-none-eabi/bin/arm-none-eabi-gcc
-	GCC_PATH := $(TOOLCHAIN_PATH)
+#	GCC_PATH := /usr/bin/gcc-arm-none-eabi/bin/arm-none-eabi-gcc
 	# executables
 	CC := "$(GCC_PATH)/bin/arm-none-eabi-gcc"
 	LD := $(CC) 
@@ -82,7 +79,7 @@ PDL_ELFTOOL := "hal/tools/$(HOST_OS)/elf/cymcuelftool"
 # Set executable names for compilers
 ifeq ($(COMPILER), GCC_ARM)
 	CC       := "$(GCC_PATH)/bin/arm-none-eabi-gcc"
-	LD       := $(CC)
+	LD       :=  $(CC)
 else
 	CC       := "$(IAR_PATH)/bin/iccarm.exe"
 	AS       := "$(IAR_PATH)/bin/iasmarm.exe"
@@ -93,16 +90,15 @@ OBJDUMP  := "$(GCC_PATH)/bin/arm-none-eabi-objdump"
 OBJCOPY  := "$(GCC_PATH)/bin/arm-none-eabi-objcopy"
 
 # Set flags for toolchain executables
-
 ifeq ($(COMPILER), GCC_ARM)
 	# set build-in compiler flags
-	CFLAGS_COMMON := -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft -fno-stack-protector -ffunction-sections -fdata-sections -ffat-lto-objects -fstrict-aliasing -g -Wall -Wextra
+	CFLAGS_COMMON := -mcpu=cortex-m4 -mthumb -mfloat-abi=soft -fno-stack-protector -ffunction-sections -fdata-sections -ffat-lto-objects -fstrict-aliasing -g -Wall -Wextra
 	ifeq ($(BUILDCFG), Debug)
 		CFLAGS_COMMON += -Og -g3
 	else ifeq ($(BUILDCFG), Release)
 		CFLAGS_COMMON += -Os -g
 	else
-$(error BUILDCFG : '$(BUILDCFG)' is not supported)
+		$(error BUILDCFG : '$(BUILDCFG)' is not supported)
 	endif
 	# add defines and includes
 	CFLAGS := $(CFLAGS_COMMON) $(INCLUDES)
@@ -110,32 +106,32 @@ $(error BUILDCFG : '$(BUILDCFG)' is not supported)
 
 # TODO: create Application-Specific Linker
 
-	LDFLAGS_COMMON := -mcpu=cortex-m0plus -mthumb -specs=nano.specs -ffunction-sections -fdata-sections  -Wl,--gc-sections -L "$(GCC_PATH)/lib/gcc/arm-none-eabi/7.2.1/thumb/v6-m" -ffat-lto-objects -g --enable-objc-gc
+	LDFLAGS_COMMON := -mcpu=cortex-m4 -mthumb -specs=nano.specs -ffunction-sections -fdata-sections  -Wl,--gc-sections -L "$(GCC_PATH)/lib/gcc/arm-none-eabi/7.2.1/thumb/v6-m" -ffat-lto-objects -g --enable-objc-gc
 	ifeq ($(BUILDCFG), Debug)
 		LDFLAGS_COMMON += -Og
 	else ifeq ($(BUILDCFG), Release)
 		LDFLAGS_COMMON += -Os
 	else
-$(error BUILDCFG : '$(BUILDCFG)' is not supported)
+		$(error BUILDCFG : '$(BUILDCFG)' is not supported)
 	endif
 	LDFLAGS_NANO := -L "$(GCC_PATH)/arm-none-eabi/lib/thumb/v6-m"
 	# TODO: check .map name
-	LDFLAGS := $(LDFLAGS_COMMON) $(LDFLAGS_NANO) -T $(LINKER_SCRIPT)
+	LDFLAGS := $(LDFLAGS_COMMON) $(LDFLAGS_NANO)
 
 else ifeq ($(COMPILER), IAR)
 
-	CFLAGS := --debug --endian=little --cpu=Cortex-M0+ -e --fpu=None --dlib_config "$(IAR_PATH)\INC\c\DLib_Config_Normal.h"
+	CFLAGS := --debug --endian=little --cpu=Cortex-M4 -e --fpu=None --dlib_config "$(IAR_PATH)\INC\c\DLib_Config_Normal.h"
 	CFLAGS += -Ohz --silent
 #	CFLAGS += $(DEFINES) $(INCLUDES)
 	CFLAGS += $(INCLUDES)
 	CC_DEPEND = --dependencies
 
-	AS_FLAGS := -s+ "-M<>" -w+ -r --cpu Cortex-M0+ --fpu None -S
+	AS_FLAGS := -s+ "-M<>" -w+ -r --cpu Cortex-M4 --fpu None -S
 
 	LINKER_SCRIPT := $(CHIP_SERIES).icf
 	
 	#options to extend stack analize: --log call_graph --log_file $(OUT)/stack_usage_$(SUFFIX).txt
 	LDFLAGS_STACK_USAGE := --stack_usage_control $(STACK_CONTROL_FILE) --diag_suppress=Ls015 --diag_suppress=Ls016
 	LDFLAGS_COMMON := --vfe --text_out locale --silent --inline --merge_duplicate_sections
-	LDFLAGS := $(LDFLAGS_COMMON) $(LDFLAGS_STACK_USAGE) --config $(LINKER_SCRIPT) --map $(OUT_APP)/$(APP_NAME).map --entry Cy_FB_ResetHandler --no_exceptions
+	LDFLAGS := $(LDFLAGS_COMMON) $(LDFLAGS_STACK_USAGE) --config $(LINKER_SCRIPT) --map $(OUT_TARGET)/$(APP_NAME).map --entry Cy_FB_ResetHandler --no_exceptions
 endif
