@@ -17,10 +17,7 @@ if [[ $TRAVIS == "true" ]]; then
         echo "Either a PR or not \"master\" branch, exiting"
         exit 0
     fi
-    PIP=pip3
-else
-    PIP=pip
 fi
 
-$PIP install setuptools twine packaging
-$PIP install --pre imgtool
+pip3 install setuptools twine packaging
+pip3 install --pre imgtool --no-binary :all:

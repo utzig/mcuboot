@@ -30,7 +30,7 @@ fi
 
 cd scripts/
 
-last_release=$(pip show imgtool | grep "Version: " | cut -d" " -f2)
+last_release=$(pip3 show imgtool | grep "Version: " | cut -d" " -f2)
 repo_version=$(grep "imgtool_version = " imgtool/__init__.py | sed 's/^.* = "\(.*\)"/\1/g')
 
 python3 ../ci/compare_versions.py --old $last_release --new $repo_version

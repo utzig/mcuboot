@@ -1,7 +1,4 @@
-on:
-  push:
-    branches:
-      - master
+on: [push, pull_request]
 
 jobs:
   environment:
@@ -13,9 +10,11 @@ jobs:
         fetch-depth: 0
     - name: Install publishing packages
       run: |
+        export PATH="$HOME/.local/bin:$PATH"
         ./ci/imgtool_install.sh
     - name: Publish imgtool
       env:
         TWINE_TOKEN: ${{ secrets.TWINE_TOKEN }}
       run: |
+        export PATH="$HOME/.local/bin:$PATH"
         ./ci/imgtool_run.sh
