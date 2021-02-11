@@ -13,10 +13,18 @@ jobs:
     - uses: actions/checkout@v2
       with:
         fetch-depth: 0
+
+    - name: Cache pip
+      uses: actions/cache@v1
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip
+
     - name: Install packages
       run: |
         export PATH="$HOME/.local/bin:$PATH"
         ./ci/imgtool_install.sh
+
     - name: Publish
       env:
         TWINE_TOKEN: ${{ secrets.TWINE_TOKEN }}
